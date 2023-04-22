@@ -4,6 +4,7 @@ import re
 import spotipy
 import requests
 import json
+
 from random import randrange
 from spotipy.oauth2 import SpotifyOAuth
 from urllib.parse import quote_plus
@@ -104,7 +105,7 @@ class musicHandler():
             return gif["results"][0]["url"]
         else:
             return None
-    
+
     async def _getArtistGenre(self, uri):
         trackInfo = self.sp.track(track_id=uri)
         artistId = trackInfo["artists"][0]["id"]

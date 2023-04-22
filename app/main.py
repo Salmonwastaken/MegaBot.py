@@ -4,6 +4,8 @@
 import discord
 import os
 import logging
+import datetime
+import asyncio
 
 logger = logging.getLogger('discord')
 
@@ -18,6 +20,11 @@ class megaBot(discord.Client):
 
     async def on_ready(self):
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
+
+        while True:
+            await asyncio.sleep(int(os.environ['globalInterval']))
+            mascotPoster = mascot.poster(client)
+            await mascotPoster.post()
 
     async def on_message(self, message):
         if message.author == client.user:
