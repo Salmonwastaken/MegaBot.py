@@ -17,7 +17,7 @@ import functions.music as music
 
 token = os.environ['token']
 utc = datetime.timezone.utc
-time = datetime.time(hour=21, minute=30, tzinfo=utc)
+time = datetime.time(hour=20, minute=00, tzinfo=utc)
 
 class megaBot(discord.Client):
     musicChannel = os.environ['musicChannel']
