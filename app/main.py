@@ -16,8 +16,11 @@ import functions.mascot as mascot
 import functions.music as music
 
 token = os.environ['token']
+
+postHour = os.environ['postHour']
+
 utc = datetime.timezone.utc
-time = datetime.time(hour=20, minute=00, tzinfo=utc)
+time = datetime.time(hour=postHour, minute=30, tzinfo=utc)
 
 class megaBot(discord.Client):
     musicChannel = os.environ['musicChannel']
@@ -36,6 +39,7 @@ class megaBot(discord.Client):
             
     @tasks.loop(time=time)
     async def post_mascot(self):
+        logger.info("AAAAAAAAAAAAAAA WE POSTING")
         mascotPoster = mascot.poster(client)
         await mascotPoster.post()
 
