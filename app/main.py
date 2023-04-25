@@ -9,21 +9,25 @@ import asyncio
 
 from discord.ext import commands, tasks
 
-logger = logging.getLogger('discord')
-
 # Internal functions
-import functions.mascot as mascot
 import functions.music as music
+import functions.mascot as mascot
 
-token = os.environ['token']
 
 postHour = int(os.environ['postHour'])
+
+logger = logging.getLogger('discord')
 
 utc = datetime.timezone.utc
 time = datetime.time(hour=postHour, minute=30, tzinfo=utc)
 
+token = os.environ['token']
+
 class megaBot(discord.Client):
     musicChannel = os.environ['musicChannel']
+
+    async def setup_hook(self):
+        post_mascot.start(client)
 
     async def on_ready(self):
         logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
@@ -36,16 +40,14 @@ class megaBot(discord.Client):
             logger.debug("Found a message in music channel, calling musicHandler")
             handler = music.musicHandler(message)
             await handler.onMessage()
-            
+
 @tasks.loop(time=time)
-async def post_mascot():
-    logger.info("AAAAAAAAAAAAAAA WE POSTING")
+async def post_mascot(client):
+    logger.debug("Posting mascot")
     mascotPoster = mascot.poster(client)
     await mascotPoster.post()
 
-# Discord.py init
 intents = discord.Intents.default()
 intents.message_content = True
-
 client = megaBot(intents=intents)
 client.run(token)
