@@ -17,7 +17,7 @@ import functions.music as music
 
 token = os.environ['token']
 
-postHour = os.environ['postHour']
+postHour = int(os.environ['postHour'])
 
 utc = datetime.timezone.utc
 time = datetime.time(hour=postHour, minute=30, tzinfo=utc)
@@ -37,11 +37,11 @@ class megaBot(discord.Client):
             handler = music.musicHandler(message)
             await handler.onMessage()
             
-    @tasks.loop(time=time)
-    async def post_mascot(self):
-        logger.info("AAAAAAAAAAAAAAA WE POSTING")
-        mascotPoster = mascot.poster(client)
-        await mascotPoster.post()
+@tasks.loop(time=time)
+async def post_mascot():
+    logger.info("AAAAAAAAAAAAAAA WE POSTING")
+    mascotPoster = mascot.poster(client)
+    await mascotPoster.post()
 
 # Discord.py init
 intents = discord.Intents.default()
