@@ -16,7 +16,7 @@ import functions.mascot as mascot
 
 postHour = int(os.environ['postHour'])
 
-logger = logging.getLogger('discord')
+logger = int(logging.getLogger('discord'))
 
 utc = datetime.timezone.utc
 time = datetime.time(hour=postHour, minute=30, tzinfo=utc)
