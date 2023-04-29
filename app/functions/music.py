@@ -4,10 +4,11 @@ import re
 import spotipy
 import requests
 import json
+import youtube_dl
 
 from random import randrange
 from spotipy.oauth2 import SpotifyOAuth
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, quote
 
 logger = logging.getLogger("discord")
 
@@ -46,6 +47,8 @@ class musicHandler():
         if type == None:
             return
         uri = await self._parseUri(type=type)
+        if uri == None:
+            return
         await self._addToPlaylist(uri)
         await self._addReaction(uri)
 
@@ -53,6 +56,10 @@ class musicHandler():
         logger.debug("Determining Uri type")
         if "open.spotify.com/track" in self.msg.content:
             return "spotify"
+        if "youtube.com/watch" in self.msg.content:
+            return "youtube"
+        if "youtu.be" in self.msg.content:
+            return "youtu.be"
         else:
             logger.debug("Message doesn't contain anything we care about.")
             return None
@@ -72,11 +79,43 @@ class musicHandler():
                 # TODO
                 return
             case "youtube":
-                # TODO
-                return
+                regex = "(?<=v\=)[^&\n]+"
+                uri = re.search(regex, self.msg.content).group()
+                trackInfo = await self._parseYoutube(uri)
+                if trackInfo == None:
+                    return None
+                uriID = await self._searchSpotify(trackInfo)
+                return uriID
+            case "youtu.be":
+                regex = "(?<=be\/)[^?\n]+"
+                uri = re.search(regex, self.msg.content).group()
+                trackInfo = await self._parseYoutube(uri)
+                if trackInfo == None:
+                    return None
+                uriID = await self._searchSpotify(trackInfo)
+                return uriID
             # Catch all Case
             case _:
                 logging.error("Unknown type, we really shouldn't be hitting this. Ever")
+
+    async def _parseYoutube(self, uri):
+        base_uri = "https://www.youtube.com/watch?v="
+        full_url = "".join((base_uri, uri))
+        trackInfo = []
+        details = youtube_dl.YoutubeDL(
+            {'quiet': 'True'}).extract_info(url=full_url, download=False)
+        if 'track' in details:
+            track, artist = quote(details['track']), quote(details['artist'])
+            trackInfo.append(track)
+            trackInfo.append(artist)
+            return trackInfo
+        else:
+            await self.msg.reply("Couldn't find a song, sorry!")
+            return None
+
+    async def _searchSpotify(self, trackInfo):
+        track = self.sp.search(q=f"remaster%20track:{trackInfo[0]}%20artist:{trackInfo[1]}",limit=1)
+        return track['tracks']['items'][0]['uri']
 
     async def _addToPlaylist(self, uri):
         logger.debug("Adding to playlist")

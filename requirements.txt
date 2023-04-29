@@ -17,3 +17,4 @@ spotipy==2.23.0
 stone==3.3.1
 urllib3==1.26.15
 yarl==1.9.1
+youtube-dl @ git+https://github.com/ytdl-org/youtube-dl.git@211cbfd5d46025a8e4d8f9f3d424aaada4698974
