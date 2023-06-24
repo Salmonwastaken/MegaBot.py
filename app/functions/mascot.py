@@ -18,7 +18,10 @@ class poster:
                             app_secret=os.environ['dropboxClientSecret'])
 
     async def post(self):
-        fileName, filePath, fileUrl = await self._getFileUrl()
+        try:
+            fileName, filePath, fileUrl = await self._getFileUrl()
+        except TypeError:
+            print("We failed to retrieve a file. No Mascot for thee")
 
         await self._postMascot(fileUrl, fileName)
         await self._deleteImage(filePath)
@@ -32,9 +35,7 @@ class poster:
                     file=discord.File(data, filename=fileName)
                 )
 
-
     async def _getFileUrl(self):
-
         try:
             fileList = self.dbx.files_list_folder(path=os.environ['dropboxFolder'])
 
@@ -47,7 +48,7 @@ class poster:
 
             return fileName, filePath, fileLink.link
         except:
-            self.mascotChannel.send(content=f"{self.dan} Man what the fuck there are no images left.")
+            await self.mascotChannel.send(content=f"{self.dan} Man what the fuck there are no images left.")
 
     async def _deleteImage(self, filePath):
         self.dbx.files_delete_v2(path=filePath)
