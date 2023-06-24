@@ -9,6 +9,7 @@ import youtube_dl
 from random import randrange
 from spotipy.oauth2 import SpotifyOAuth
 from urllib.parse import quote_plus, quote
+from bs4 import BeautifulSoup
 
 logger = logging.getLogger("discord")
 
@@ -60,6 +61,8 @@ class musicHandler():
             return "youtube"
         if "youtu.be" in self.msg.content:
             return "youtu.be"
+        if "bandcamp.com/track/" in self.msg.content:
+            return "bandcamp"
         else:
             logger.debug("Message doesn't contain anything we care about.")
             return None
@@ -73,8 +76,14 @@ class musicHandler():
                 uriID = re.search(regex, self.msg.content).group()
                 return uriID
             case "bandcamp":
-                # TODO
-                return
+                regex = "(?P<url>https?://[^\s]+)"
+                uri = re.search(regex, self.msg.content).group()
+                response = requests.get(uri)
+                soup = BeautifulSoup(response.content, features="lxml")
+                title = soup.head.title.get_text()
+                trackInfo = title.split('|')
+                uriID = await self._searchSpotify(trackInfo)
+                return uriID
             case "soundcloud":
                 # TODO
                 return
@@ -114,7 +123,7 @@ class musicHandler():
             return None
 
     async def _searchSpotify(self, trackInfo):
-        track = self.sp.search(q=f"remaster%20track:{trackInfo[0]}%20artist:{trackInfo[1]}",limit=1)
+        track = self.sp.search(q=f"remaster%20track:{trackInfo[0]}%20artist:{trackInfo[1]}",market='GB',limit=1)
         return track['tracks']['items'][0]['uri']
 
     async def _addToPlaylist(self, uri):
