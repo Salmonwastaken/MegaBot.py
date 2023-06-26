@@ -49,6 +49,7 @@ class musicHandler():
             return
         uri = await self._parseUri(type=type)
         if uri == None:
+            await self.msg.reply("Found a song, but couldn't find it on Spotify!")
             return
         await self._addToPlaylist(uri)
         await self._addReaction(uri)
@@ -124,7 +125,10 @@ class musicHandler():
 
     async def _searchSpotify(self, trackInfo):
         track = self.sp.search(q=f"remaster%20track:{trackInfo[0]}%20artist:{trackInfo[1]}",market='GB',limit=1)
-        return track['tracks']['items'][0]['uri']
+        if (trackInfo[0].strip() in track['tracks']['items'][0]['name']) and (trackInfo[1].strip() in track['tracks']['items'][0]['artists'][0]['name']):
+            return track['tracks']['items'][0]['uri']
+        else:
+            return None
 
     async def _addToPlaylist(self, uri):
         logger.debug("Adding to playlist")
