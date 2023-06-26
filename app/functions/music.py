@@ -49,7 +49,7 @@ class musicHandler():
             return
         uri = await self._parseUri(type=type)
         if uri == None:
-            await self.msg.reply("Found a song, but couldn't find it on Spotify!")
+            await self.msg.reply("Couldn't find a song, sorry!")
             return
         await self._addToPlaylist(uri)
         await self._addReaction(uri)
@@ -120,7 +120,6 @@ class musicHandler():
             trackInfo.append(artist)
             return trackInfo
         else:
-            await self.msg.reply("Couldn't find a song, sorry!")
             return None
 
     async def _searchSpotify(self, trackInfo):
