@@ -4,7 +4,7 @@ import re
 import spotipy
 import requests
 import json
-import youtube_dl
+import yt_dlp
 
 from random import randrange
 from spotipy.oauth2 import SpotifyOAuth
@@ -58,6 +58,8 @@ class musicHandler():
         logger.debug("Determining Uri type")
         if "open.spotify.com/track" in self.msg.content:
             return "spotify"
+        if "spotify.link/" in self.msg.content:
+            return "spoofy"
         if "youtube.com/watch" in self.msg.content:
             return "youtube"
         if "youtu.be" in self.msg.content:
@@ -76,11 +78,20 @@ class musicHandler():
                 regex = "(?<=track\/)[^?\n]+"
                 uriID = re.search(regex, self.msg.content).group()
                 return uriID
+            # Spotify shortlinks :/
+            # We get the URL shortened page, retrieve the actual Spotify link and then parse that
+            case "spoofy":
+                regex = "(?P<url>https?://[^\s]+)"
+                uri = re.search(regex, self.msg.content).group()
+                soup = await self._soupifyPage(uri)
+                spotify_uri = soup.find(rel="canonical")["href"]
+                regex = "(?<=track\/)[^?\n]+"
+                uriID = re.search(regex, spotify_uri).group()
+                return uriID
             case "bandcamp":
                 regex = "(?P<url>https?://[^\s]+)"
                 uri = re.search(regex, self.msg.content).group()
-                response = requests.get(uri)
-                soup = BeautifulSoup(response.content, features="lxml")
+                soup = await self._soupifyPage
                 title = soup.head.title.get_text()
                 trackInfo = title.split('|')
                 uriID = await self._searchSpotify(trackInfo)
@@ -108,16 +119,21 @@ class musicHandler():
             case _:
                 logging.error("Unknown type, we really shouldn't be hitting this. Ever")
 
+    async def _soupifyPage(self, uri):
+        response = requests.get(uri)
+        soup = BeautifulSoup(response.content, features="lxml")
+        return soup
+
     async def _parseYoutube(self, uri):
         base_uri = "https://www.youtube.com/watch?v="
         full_url = "".join((base_uri, uri))
         trackInfo = []
-        details = youtube_dl.YoutubeDL(
-            {'quiet': 'True'}).extract_info(url=full_url, download=False)
+        details = yt_dlp.YoutubeDL({'quiet': 'True'}).extract_info(url=full_url, download=False)
         if 'track' in details:
-            track, artist = quote(details['track']), quote(details['artist'])
+            track, artist = details['track'], details['artist']
             trackInfo.append(track)
             trackInfo.append(artist)
+            print(trackInfo)
             return trackInfo
         else:
             return None
