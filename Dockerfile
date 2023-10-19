@@ -9,6 +9,6 @@ RUN apk add git --no-cache
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt && rm requirements.txt
 
-COPY app .
+COPY megabot .
 
 CMD ["python3", "main.py"]

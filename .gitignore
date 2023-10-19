@@ -164,3 +164,5 @@ container_id
 .vscode
 
 mega-env
+
+.envrc
