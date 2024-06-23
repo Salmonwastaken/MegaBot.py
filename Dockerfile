@@ -1,14 +1,14 @@
-FROM python:3.11.3-alpine3.17
+FROM debian:12-slim AS builder
+RUN apt-get update && \
+    apt-get install --no-install-suggests --no-install-recommends --yes pipx
+ENV PATH="/root/.local/bin:${PATH}"
+RUN pipx install poetry
+RUN pipx inject poetry poetry-plugin-bundle
+WORKDIR /src
+COPY . .
+RUN poetry bundle venv --python=/usr/bin/python3 --only=main /venv
 
-WORKDIR /app
-
-ENV PYTHONUNBUFFERED 1
-
-RUN apk add git --no-cache
-
-COPY requirements.txt .
-RUN pip3 install -r requirements.txt && rm requirements.txt
-
-COPY megabot .
-
-CMD ["python3", "main.py"]
+FROM gcr.io/distroless/python3-debian12
+COPY --from=builder /venv /venv
+ENV PYTHONPATH="/venv/lib/python3.11/site-packages/"
+ENTRYPOINT ["python", "/venv/lib/python3.11/site-packages/megabot/main.py"]

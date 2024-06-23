@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "megabot-py"
+version = "v0.10.1"
+description = ""
+authors = []
+license = "MIT"
+readme = "README.md"
+packages = [{include = "megabot"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+spotipy = "^2.24.0"
+lxml = "^5.2.2"
+aiohttp = "^3.9.5"
+yt-dlp = "^2024.5.27"
+discord = "^2.3.2"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
