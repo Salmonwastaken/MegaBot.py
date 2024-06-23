@@ -5,9 +5,8 @@ import discord
 import os
 import logging
 import datetime
-import asyncio
 
-from discord.ext import commands, tasks
+from discord.ext import tasks
 
 # Internal functions
 import functions.music as music
@@ -23,6 +22,7 @@ time = datetime.time(hour=postHour, minute=30, tzinfo=utc)
 
 token = os.environ['token']
 
+
 class megaBot(discord.Client):
     musicChannel = os.environ['musicChannel']
 
@@ -35,11 +35,12 @@ class megaBot(discord.Client):
     async def on_message(self, message):
         if message.author == client.user:
             return
-        
+
         if message.channel.id == int(self.musicChannel):
             logger.debug("Found a message in music channel, calling musicHandler")
             handler = music.musicHandler(message)
             await handler.onMessage()
+
 
 @tasks.loop(time=time)
 async def post_mascot(client):
