@@ -2,14 +2,13 @@ import os
 import logging
 import re
 import spotipy
-import requests
-import json
 import yt_dlp
+import lxml.html
 
-from random import randrange
+
 from spotipy.oauth2 import SpotifyOAuth
 from urllib.parse import quote_plus
-from bs4 import BeautifulSoup
+from aiohttp import ClientSession
 
 logger = logging.getLogger("discord")
 
@@ -82,31 +81,31 @@ class musicHandler:
         else:
             logger.debug("Message doesn't contain anything we care about.")
             return None
-        # TODO: add bandcamp,soundcloud etc
+        # TODO: add soundcloud etc
 
     async def _parseUri(self, type):
         logger.debug("Parsing uri")
         match type:
             case "spotify":
-                regex = "(?<=track\/)[^?\n]+"
+                regex = r"(?<=track/)[^?\n]+"
                 uriID = re.search(regex, self.msg.content).group()
                 return uriID
             # Spotify shortlinks :/
             # We get the URL shortened page, retrieve the actual Spotify link
             # and then parse that
             case "spoofy":
-                regex = "(?P<url>https?://[^\s]+)"
+                regex = r"(?P<url>https?://[^\s]+)"
                 uri = re.search(regex, self.msg.content).group()
-                soup = await self._soupifyPage(uri)
-                spotify_uri = soup.find(rel="canonical")["href"]
+                parse = await self._parsePage(uri)
+                spotify_uri = parse.xpath("//link[@rel='canonical']")[0].get('href')
                 regex = "(?<=track\/)[^?\n]+"
                 uriID = re.search(regex, spotify_uri).group()
                 return uriID
             case "bandcamp":
-                regex = "(?P<url>https?://[^\s]+)"
+                regex = r"(?P<url>https?://[^\s]+)"
                 uri = re.search(regex, self.msg.content).group()
-                soup = await self._soupifyPage
-                title = soup.head.title.get_text()
+                parse = await self._parsePage(uri)
+                title = parse.find('.//title').text
                 trackInfo = title.split("|")
                 uriID = await self._searchSpotify(trackInfo)
                 return uriID
@@ -114,7 +113,7 @@ class musicHandler:
                 # TODO
                 return
             case "youtube":
-                regex = "(?<=v\=)[^&\n]+"
+                regex = r"(?<=v\=)[^&\n]+"
                 uri = re.search(regex, self.msg.content).group()
                 trackInfo = await self._parseYoutube(uri)
                 if trackInfo is None:
@@ -122,7 +121,7 @@ class musicHandler:
                 uriID = await self._searchSpotify(trackInfo)
                 return uriID
             case "youtu.be":
-                regex = "(?<=be\/)[^?\n]+"
+                regex = r"(?<=be\/)[^?\n]+"
                 uri = re.search(regex, self.msg.content).group()
                 trackInfo = await self._parseYoutube(uri)
                 if trackInfo is None:
@@ -131,12 +130,14 @@ class musicHandler:
                 return uriID
             # Catch all Case
             case _:
-                logging.error("Unknown type, we really shouldn't be hitting this. Ever")
+                logging.error("Unknown type")
 
-    async def _soupifyPage(self, uri):
-        response = requests.get(uri)
-        soup = BeautifulSoup(response.content, features="lxml")
-        return soup
+    async def _parsePage(self, uri):
+        async with ClientSession() as session:
+            async with session.get(uri) as r:
+                buf = await r.text()
+                tree = lxml.html.fromstring(buf)
+        return tree
 
     async def _parseYoutube(self, uri):
         base_uri = "https://www.youtube.com/watch?v="
@@ -175,30 +176,7 @@ class musicHandler:
         self.sp.playlist_add_items(playlist_id=self.steamedcatsID, items=[uri])
 
     async def _addReaction(self, uri):
-        chance = randrange(100)
-        if chance > 99:
-            gifUrl = await self._obtainGif(uri)
-            if gifUrl is None:
-                await self.msg.add_reaction("👀")
-            else:
-                await self.msg.reply(
-                    f"I looked up the genre of that song and found this gif! {gifUrl}"
-                )
-        else:
-            await self.msg.add_reaction("👀")
-
-    async def _obtainGif(self, uri):
-        apikey = os.environ["tenorKey"]
-        ckey = "my_test_app"
-        search_term = await self._getArtistGenre(uri)
-        r = requests.get(
-            f"https://tenor.googleapis.com/v2/search?q={search_term}&key={apikey}&client_key={ckey}&limit=1"
-        )
-        if r.status_code == 200:
-            gif = json.loads(r.content)
-            return gif["results"][0]["url"]
-        else:
-            return None
+        await self.msg.add_reaction("👀")
 
     async def _getArtistGenre(self, uri):
         trackInfo = self.sp.track(track_id=uri)
