@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 import os
 import discord
 
@@ -13,7 +12,6 @@ def change_env():
     os.environ["spotifyID"] = "5678"
     os.environ["spotifySecret"] = "hinekora!"
     os.environ["spotifyRefresh"] = "oriath!"
-    os.environ["tenorKey"] = "the_atlas"
 
 
 class TestmusicHandler(object):
