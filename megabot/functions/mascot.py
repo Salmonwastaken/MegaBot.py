@@ -10,7 +10,7 @@ logger = logging.getLogger("discord")
 class poster:
     def __init__(self, client):
         logger.debug("Succesfully initialized mascotPoster")
-        self.mascotChannel = client.get_channel(int(os.environ['mascotchannelId']))
+        self.mascotChannel = client.get_channel(int(os.environ["mascotchannelId"]))
 
     async def post(self):
         await self._postMascot()
@@ -19,7 +19,9 @@ class poster:
         async with ClientSession() as session:
             async with session.get("https://cataas.com/cat") as resp:
                 if resp.status != 200:
-                    return await self.mascotChannel.send("cataas.com failed to return a cat! D:")
+                    return await self.mascotChannel.send(
+                        "cataas.com failed to return a cat! D:"
+                    )
                 data = BytesIO(await resp.read())
 
                 await self.mascotChannel.send(

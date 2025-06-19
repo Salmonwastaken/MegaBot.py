@@ -13,24 +13,24 @@ import functions.music as music
 import functions.mascot as mascot
 
 
-postHour = int(os.environ['postHour'])
+postHour = int(os.environ["postHour"])
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("discord")
 
 utc = datetime.timezone.utc
 time = datetime.time(hour=postHour, minute=30, tzinfo=utc)
 
-token = os.environ['token']
+token = os.environ["token"]
 
 
 class megaBot(discord.Client):
-    musicChannel = os.environ['musicChannel']
+    musicChannel = os.environ["musicChannel"]
 
     async def setup_hook(self):
         post_mascot.start(client)
 
     async def on_ready(self):
-        logger.info(f'Logged in as {self.user} (ID: {self.user.id})')
+        logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def on_message(self, message):
         if message.author == client.user:
@@ -47,6 +47,7 @@ async def post_mascot(client):
     logger.debug("Posting mascot")
     mascotPoster = mascot.poster(client)
     await mascotPoster.post()
+
 
 intents = discord.Intents.default()
 intents.message_content = True

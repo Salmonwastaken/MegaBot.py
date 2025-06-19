@@ -4,6 +4,7 @@ import re
 import spotipy
 import yt_dlp
 import lxml.html
+from pprint import pformat
 
 
 from spotipy.oauth2 import SpotifyOAuth
@@ -97,7 +98,7 @@ class musicHandler:
                 regex = r"(?P<url>https?://[^\s]+)"
                 uri = re.search(regex, self.msg.content).group()
                 parse = await self._parsePage(uri)
-                spotify_uri = parse.xpath("//link[@rel='canonical']")[0].get('href')
+                spotify_uri = parse.xpath("//link[@rel='canonical']")[0].get("href")
                 regex = "(?<=track\/)[^?\n]+"
                 uriID = re.search(regex, spotify_uri).group()
                 return uriID
@@ -105,7 +106,7 @@ class musicHandler:
                 regex = r"(?P<url>https?://[^\s]+)"
                 uri = re.search(regex, self.msg.content).group()
                 parse = await self._parsePage(uri)
-                title = parse.find('.//title').text
+                title = parse.find(".//title").text
                 trackInfo = title.split("|")
                 uriID = await self._searchSpotify(trackInfo)
                 return uriID
@@ -139,34 +140,85 @@ class musicHandler:
                 tree = lxml.html.fromstring(buf)
         return tree
 
+    async def _guess_track_info(self, trackTitle):
+        trackTitle = re.sub(r"[–—−]", "-", trackTitle)
+        trackTitle = re.sub(r"[\[\(].*?[\]\)]", "", trackTitle).strip()
+
+        #  Artist - Track
+        match = re.match(r"^(.+?)\s*-\s*(.+)$", trackTitle)
+        if match:
+            artist = match.group(1).strip()
+            track = match.group(2).strip()
+            return artist, track
+
+        # Pattern 2: <track> by <artist>
+        match = re.match(r"^(.+?)\s+by\s+(.+)$", trackTitle)
+        if match:
+            track = match.group(1).strip()
+            artist = match.group(2).strip()
+            return artist, track
+
+        # Pattern 3: <artist> | <track
+        match = re.match(r"^(.+?)\s+\|\s+(.+)$", trackTitle)
+        if match:
+            track = match.group(1).strip()
+            artist = match.group(2).strip()
+            return artist, track
+
+        return None
+
     async def _parseYoutube(self, uri):
         base_uri = "https://www.youtube.com/watch?v="
         full_url = "".join((base_uri, uri))
-        trackInfo = []
-        details = yt_dlp.YoutubeDL({"quiet": "True"}).extract_info(
-            url=full_url, download=False
-        )
+
+        details = yt_dlp.YoutubeDL(
+            {
+                "quiet": True,
+                "skip_download": True,
+                "extract_flat": "in_playlist",
+                "no_warnings": True,
+            }
+        ).extract_info(url=full_url, download=False)
+
+        logger.debug(details)
+
         if "track" in details:
-            track, artist = details["track"], details["artist"]
-            trackInfo.append(track)
-            trackInfo.append(artist)
-            print(trackInfo)
-            return trackInfo
+            trackInfo = (details["artist"], details["track"])
         else:
-            return None
+            trackInfo = await self._guess_track_info(
+                details["fulltitle"].lower().strip()
+            )
+
+        logger.debug(trackInfo)
+        return trackInfo
 
     async def _searchSpotify(self, trackInfo):
-        track = self.sp.search(
-            q=f"remaster%20track:{trackInfo[0]}%20artist:{trackInfo[1]}",
+        artistName, songName = trackInfo
+
+        result = self.sp.search(
+            q=f"remaster%20track:{songName}%20artist:{artistName}",
             market="GB",
-            limit=1,
+            limit=5,
         )
-        if (trackInfo[0].strip() in track["tracks"]["items"][0]["name"]) and (
-            trackInfo[1].strip() in track["tracks"]["items"][0]["artists"][0]["name"]
-        ):
-            return track["tracks"]["items"][0]["uri"]
-        else:
-            return None
+
+        logger.debug(f"Looking up {songName} by {artistName}")
+
+        for track in result["tracks"]["items"]:
+            logger.debug(pformat(track))
+
+            if track["name"].strip().lower() != songName.strip().lower():
+                continue
+
+            logger.debug(track["name"].strip().lower())
+
+            artist_names = [
+                artist["name"].strip().lower() for artist in track["artists"]
+            ]
+
+            if artistName.strip().lower() in artist_names:
+                return track["uri"]
+
+        return None
 
     async def _addToPlaylist(self, uri):
         logger.debug("Adding to playlist")
