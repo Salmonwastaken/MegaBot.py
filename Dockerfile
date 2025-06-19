@@ -1,6 +1,6 @@
 FROM debian:12-slim AS builder
 RUN apt-get update && \
-    apt-get install --no-install-suggests --no-install-recommends --yes pipx
+    apt-get install --no-install-suggests --no-install-recommends --yes pipx python-is-python3
 ENV PATH="/root/.local/bin:${PATH}"
 RUN pipx install poetry
 RUN pipx inject poetry poetry-plugin-bundle
