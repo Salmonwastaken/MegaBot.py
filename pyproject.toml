@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "megabot-py"
-version = "v0.10.3"
+version = "v0.11.2"
 description = ""
 authors = []
 license = "MIT"
