@@ -108,6 +108,7 @@ class musicHandler:
                 parse = await self._parsePage(uri)
                 title = parse.find(".//title").text
                 trackInfo = title.split("|")
+                trackInfo.reverse()
                 uriID = await self._searchSpotify(trackInfo)
                 return uriID
             case "soundcloud":
